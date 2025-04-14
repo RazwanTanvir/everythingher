@@ -1,26 +1,15 @@
-* {
+body {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background-color: #111;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  background: linear-gradient(to bottom, #fef6f9, #ffe4ec);
+  font-family: 'Pacifico', cursive;
   overflow: hidden;
 }
 
 canvas {
-  background-color: #33524d;
-  border: 2px solid #fff;
-}
-
-@media (max-width: 600px) {
-  canvas {
-    width: 50%;
-    height: auto;
-  }
+  display: block;
+  margin: auto;
+  border: 2px solid #bf0a67;
+  background-color: #fff9fc;
+  box-shadow: 0 0 15px #ffb6c1;
 }

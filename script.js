@@ -1,19 +1,18 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const brickSound = document.getElementById('brickSound');
+const revealSound = document.getElementById('revealSound');
 
-let gameWon = false;
+let auraFullyRevealed = false;
 
-
-// Set the canvas size dynamically for mobile responsiveness
-canvas.width = window.innerWidth - 40; // Reduce padding for mobile
+// Responsive canvas sizing
+canvas.width = window.innerWidth - 40;
 canvas.height = window.innerHeight - 80;
 
-const ballImage = new Image();
-ballImage.src = 'face.jpg'; // replace with actual path
+const auraImage = new Image();
+auraImage.src = 'face.jpg'; // replace with her image
 
-// Paddle
-const paddle = {
+// Paddle – representing the viewer’s focus
+const focusBar = {
   width: 300,
   height: 15,
   radius: 5,
@@ -23,8 +22,8 @@ const paddle = {
   dx: 0
 };
 
-// Ball
-const ball = {
+// Ball – her essence in motion
+const essence = {
   x: canvas.width / 2,
   y: canvas.height - 30,
   radius: 30,
@@ -33,25 +32,15 @@ const ball = {
   dy: -4
 };
 
-// Emotions (bricks)
-const emotions = ['Her eyes', 'Her smile', 'Her voice', 'Her hair', 'Her face', 'Her lips', 'Her nose', 'Her cheeks', 'Her neck', 'Her skin',
-'Her hands', 'Her fingers', 'Her toes', 'Her thighs', 'Her walk', 'Her elegance', 'Her grace', 'Her presence', 'Her glow', 'Her laughter',
-'Her kindness', 'Her gentleness', 'Her strength', 'Her courage', 'Her confidence', 'Her honesty', 'Her wisdom', 'Her compassion', 'Her loyalty', 'Her patience',
-'Her intelligence', 'Her creativity', 'Her ambition', 'Her goals', 'Her dreams', 'Her determination', 'Her vision', 'Her aim', 'Her clarity', 'Her values',
-'Her nurturing', 'Her passion', 'Her softness', 'Her warmth', 'Her hugs', 'Her kisses', 'Her giggles', 'Her intuition', 'Her curiosity', 'Her empathy',
-'Her resilience', 'Her focus', 'Her support', 'Her humor', 'Her priorities', 'Her beliefs', 'Her discipline', 'Her spirituality', 'Her uniqueness', 'Her soul'
+// Traits that define her aura
+const traits = [
+  'Her eyes', 'Her smile', 'Her voice', 'Her hair', 'Her face', 'Her lips', 'Her nose', 'Her cheeks', 'Her neck', 'Her skin',
+  'Her hands', 'Her fingers', 'Her toes', 'Her thighs', 'Her walk', 'Her elegance', 'Her grace', 'Her presence', 'Her glow', 'Her laughter',
+  'Her kindness', 'Her gentleness', 'Her strength', 'Her courage', 'Her confidence', 'Her honesty', 'Her wisdom', 'Her compassion', 'Her loyalty', 'Her patience',
+  'Her intelligence', 'Her creativity', 'Her ambition', 'Her goals', 'Her dreams', 'Her determination', 'Her vision', 'Her aim', 'Her clarity', 'Her values',
+  'Her nurturing', 'Her passion', 'Her softness', 'Her warmth', 'Her hugs', 'Her kisses', 'Her giggles', 'Her intuition', 'Her curiosity', 'Her empathy',
+  'Her resilience', 'Her focus', 'Her support', 'Her humor', 'Her priorities', 'Her beliefs', 'Her discipline', 'Her spirituality', 'Her uniqueness', 'Her soul'
 ];
-/*[
-  'Rage', 'Frustration', 'Resentment', 'Wrath', 'Fury', 
-  'Irritation', 'Hatred', 'Grief', 'Sorrow', 'Heartbreak', 
-  'Misery', 'Despair', 'Melancholy', 'Regret', 'Isolation', 
-  'Emptiness', 'Detachment', 'Abandonment', 'Alienation', 
-  'Disconnection', 'Anxiety', 'Insecurity', 'Panic', 
-  'Apprehension', 'Paranoia', 'Dread', 'Phobia', 
-  'Uncertainty', 'Confusion', 'Indecision', 'Hesitation', 
-  'Skepticism', 'Ambivalence', 'Distrust'
-
-];*/
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -60,127 +49,136 @@ function shuffleArray(array) {
   }
 }
 
+/*
+// Traits display layout
+const traitRowCount = 6;
+const traitColumnCount = 10;
+const traitWidth = 125;
+const traitHeight = 50;
+const traitPadding = 10;
+const traitOffsetTop = 100;
+const traitOffsetLeft = 250;
+*/
+// Calculate trait dimensions based on canvas size
+const traitColumnCount = 10;
+const traitRowCount = 6;
+const traitPadding = canvas.width * 0.01; // 1% of canvas width
 
-const brickRowCount = 6;
-const brickColumnCount = 10;
-const brickWidth = 125;
-const brickHeight = 50;
-const brickPadding = 10;
-const brickOffsetTop = 100;
-const brickOffsetLeft = 250;
 
-const bricks = [];
 
-shuffleArray(emotions);
 
-for (let r = 0; r < brickRowCount; r++) {
-  for (let c = 0; c < brickColumnCount; c++) {
-    const emotionIndex = r * brickColumnCount + c;
-    if (emotionIndex < emotions.length) {
-      bricks.push({
-        x: c * (brickWidth + brickPadding) + brickOffsetLeft,
-        y: r * (brickHeight + brickPadding) + brickOffsetTop,
+const traitHeight = canvas.height * 0.05; // 5% of canvas height
+const traitOffsetTop = canvas.height * 0.15; // 15% from top
+const traitOffsetLeft = canvas.width * 0.15; // 5% margin on both sides
+
+
+const totalHorizontalPadding = (traitColumnCount - 1) * traitPadding;
+const availableWidth = canvas.width - 2 * traitOffsetLeft - totalHorizontalPadding;
+const traitWidth = availableWidth / traitColumnCount;
+
+
+const qualities = [];
+shuffleArray(traits);
+
+for (let r = 0; r < traitRowCount; r++) {
+  for (let c = 0; c < traitColumnCount; c++) {
+    const index = r * traitColumnCount + c;
+    if (index < traits.length) {
+      qualities.push({
+        x: c * (traitWidth + traitPadding) + traitOffsetLeft,
+        y: r * (traitHeight + traitPadding) + traitOffsetTop,
         status: 1,
-        label: emotions[emotionIndex]
+        label: traits[index]
       });
     }
   }
 }
 
-
-function drawPaddle() {
+function drawFocusBar() {
   ctx.fillStyle = '#bf0a67';
-  ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height, paddle.radius);
+  ctx.fillRect(focusBar.x, focusBar.y, focusBar.width, focusBar.height, focusBar.radius);
 }
 
-function drawBall() {
-  //ctx.drawImage(ballImage, ball.x - ball.radius, ball.y - ball.radius, 2 * ball.radius, 2 * ball.radius);
-  const radius = ball.radius;
-  const centerX = ball.x;
-  const centerY = ball.y;
+function drawEssence() {
+  const radius = essence.radius;
+  const centerX = essence.x;
+  const centerY = essence.y;
 
-  ctx.save(); // Save current state
-
+  ctx.save();
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
   ctx.closePath();
-  ctx.clip(); // Anything drawn now will be clipped to the circle
+  ctx.clip();
 
-  // Draw the image centered on the ball
-  ctx.drawImage(ballImage, centerX - radius, centerY - radius, radius * 2, radius * 2);
-
-  ctx.restore(); // Restore state so the clip doesn't affect other things
+  ctx.drawImage(auraImage, centerX - radius, centerY - radius, radius * 2, radius * 2);
+  ctx.restore();
 }
 
-function drawBricks() {
+function drawTraits() {
   ctx.font = '16px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  bricks.forEach(brick => {
-    if (brick.status === 1) {
+  qualities.forEach(trait => {
+    if (trait.status === 1) {
       ctx.fillStyle = '#56cc75';
-      ctx.fillRect(brick.x, brick.y, brickWidth, brickHeight);
+      ctx.fillRect(trait.x, trait.y, traitWidth, traitHeight);
       ctx.fillStyle = '#fff';
-      ctx.fillText(brick.label, brick.x + brickWidth / 2, brick.y + brickHeight / 2);
+      ctx.fillText(trait.label, trait.x + traitWidth / 2, trait.y + traitHeight / 2);
     }
   });
 }
 
 function drawTitle() {
   ctx.font = '44px "Pacifico", cursive';
-  ctx.fillStyle = '#bf0a67'; // title color
+  ctx.fillStyle = '#bf0a67';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillText('60 Shades of Her', canvas.width / 2, 10);
 }
 
-function movePaddle() {
-  paddle.x += paddle.dx;
-  if (paddle.x < 0) paddle.x = 0;
-  if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
+function moveFocusBar() {
+  focusBar.x += focusBar.dx;
+  if (focusBar.x < 0) focusBar.x = 0;
+  if (focusBar.x + focusBar.width > canvas.width) focusBar.x = canvas.width - focusBar.width;
 }
 
-function moveBall() {
-  ball.x += ball.dx;
-  ball.y += ball.dy;
+function moveEssence() {
+  essence.x += essence.dx;
+  essence.y += essence.dy;
 
-  // Wall collision
-  if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) ball.dx *= -1;
-  if (ball.y - ball.radius < 0) ball.dy *= -1;
+  if (essence.x + essence.radius > canvas.width || essence.x - essence.radius < 0) essence.dx *= -1;
+  if (essence.y - essence.radius < 0) essence.dy *= -1;
 
-  // Paddle collision
   if (
-    ball.x > paddle.x &&
-    ball.x < paddle.x + paddle.width &&
-    ball.y + ball.radius > paddle.y
+    essence.x > focusBar.x &&
+    essence.x < focusBar.x + focusBar.width &&
+    essence.y + essence.radius > focusBar.y
   ) {
-    ball.dy = -ball.speed;
+    essence.dy = -essence.speed;
   }
 
-  // Bottom collision (game over reset)
-  if (ball.y + ball.radius > canvas.height) {
-    ball.x = canvas.width / 2;
-    ball.y = canvas.height - 30;
-    ball.dx = 4;
-    ball.dy = -4;
+  if (essence.y + essence.radius > canvas.height) {
+    essence.x = canvas.width / 2;
+    essence.y = canvas.height - 30;
+    essence.dx = 4;
+    essence.dy = -4;
   }
 
-  // Brick collision
-  bricks.forEach(brick => {
-    if (brick.status === 1) {
+  qualities.forEach(trait => {
+    if (trait.status === 1) {
       if (
-        ball.x > brick.x &&
-        ball.x < brick.x + brickWidth &&
-        ball.y > brick.y &&
-        ball.y < brick.y + brickHeight
+        essence.x > trait.x &&
+        essence.x < trait.x + traitWidth &&
+        essence.y > trait.y &&
+        essence.y < trait.y + traitHeight
       ) {
-        ball.dy *= -1;
-        brick.status = 0;
-		
-		if(brickSound) {
-			brickSound.currentTime = 0; // rewind
-			brickSound.play();
-		}
+        essence.dy *= -1;
+        trait.status = 0;
+
+        if (revealSound) {
+          revealSound.currentTime = 0;
+          revealSound.play();
+        }
       }
     }
   });
@@ -189,116 +187,73 @@ function moveBall() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawTitle();
-  drawPaddle();
-  drawBall();
-  drawBricks();
+  drawFocusBar();
+  drawEssence();
+  drawTraits();
 }
 
-
 function update() {
-  movePaddle();
-  moveBall();
+  moveFocusBar();
+  moveEssence();
   draw();
-  // Check win condition
-  if (bricks.every(brick => brick.status === 0)) {
-    gameWon = true;
-    showWinScreen();
+
+  if (qualities.every(q => q.status === 0)) {
+    auraFullyRevealed = true;
+    showTributeScreen();
     return;
   }
   requestAnimationFrame(update);
 }
 
-/*
-function showWinScreen() {
+function showTributeScreen() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#222';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = '#0f0';
-  ctx.font = '28px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('You Win! Emotions Cleared ❤️✨', canvas.width / 2, canvas.height / 2);
-}*/
-
-function showWinScreen() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = '#111';
   ctx.font = 'bold 30px "Courier New", cursive';
   ctx.textAlign = 'center';
 
   const lines = [
-	
     "Each hit was a praise,",
     "Each bounce was a heartbeat.",
     "And with every smash, I’m reminded:",
     "She’s not just the game —",
     "She’s the entire universe I want to play in.",
-	"❤️"
+	  "❤️"
   ];
 
   const startY = canvas.height / 2 - (lines.length * 25) / 2;
-
   lines.forEach((line, index) => {
     ctx.fillText(line, canvas.width / 2, startY + index * 30);
   });
 }
 
-
-/*
-function update() {
-  if (gameWon) return;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  drawBricks();
-  drawBall();
-  drawPaddle();
-
-  movePaddle();
-  moveBall();
-  checkCollisions();
-
-  // Check win condition
-  if (bricks.every(brick => brick.status === 0)) {
-    gameWon = true;
-    showWinScreen();
-    return;
-  }
-
-  requestAnimationFrame(update);
-}
-*/
-
-
+// Controls
 document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowLeft') paddle.dx = -paddle.speed;
-  else if (e.key === 'ArrowRight') paddle.dx = paddle.speed;
+  if (e.key === 'ArrowLeft') focusBar.dx = -focusBar.speed;
+  else if (e.key === 'ArrowRight') focusBar.dx = focusBar.speed;
 });
 
 document.addEventListener('keyup', e => {
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') paddle.dx = 0;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') focusBar.dx = 0;
 });
 
-// Add touch controls for mobile
+// Touch controls
 let touchStartX = 0;
-
 document.addEventListener('touchstart', e => {
   touchStartX = e.touches[0].clientX;
 });
-
 document.addEventListener('touchmove', e => {
   const touchEndX = e.touches[0].clientX;
   if (touchEndX < touchStartX) {
-    paddle.dx = -paddle.speed;
+    focusBar.dx = -focusBar.speed;
   } else if (touchEndX > touchStartX) {
-    paddle.dx = paddle.speed;
+    focusBar.dx = focusBar.speed;
   }
 });
-
 document.addEventListener('touchend', () => {
-  paddle.dx = 0;
+  focusBar.dx = 0;
 });
 
-ballImage.onload = () => {
+// Game starts on image load
+auraImage.onload = () => {
   update();
 };
